@@ -10,6 +10,8 @@ void main() async {
       actions: [
         NotificationAction('red-pill', 'Red Pill'),
         NotificationAction('blue-pill', 'Blue Pill')
-      ]);
-  await sessionBus.disconnect();
+      ], actionCallback: (action) async {
+    print('You chose ${action}');
+    await sessionBus.disconnect();
+  });
 }
