@@ -1,0 +1,35 @@
+<node name="/org/freedesktop/Notifications">
+  <interface name="org.freedesktop.Notifications">
+    <method name="Notify">
+      <arg name="appName" type="s" direction="in"/>
+      <arg name="replacesID" type="u" direction="in"/>
+      <arg name="appIcon" type="s" direction="in"/>
+      <arg name="summary" type="s" direction="in"/>
+      <arg name="body" type="s" direction="in"/>
+      <arg name="actions" type="as" direction="in"/>
+      <arg name="hints" type="a{sv}" direction="in"/>
+      <arg name="expireTimeout" type="i" direction="in"/>
+      <arg name="id" type="u" direction="out"/>
+    </method>
+    <method name="CloseNotification">
+      <arg name="id" type="u" direction="in"/>
+    </method>
+    <method name="GetCapabilities">
+      <arg name="capabilities" type="as" direction="out"/>
+    </method>
+    <method name="GetServerInformation">
+      <arg name="name" type="s" direction="out"/>
+      <arg name="vendor" type="s" direction="out"/>
+      <arg name="version" type="s" direction="out"/>
+      <arg name="specVersion" type="s" direction="out"/>
+    </method>
+    <signal name="NotificationClosed">
+      <arg name="id" type="u"/>
+      <arg name="reason" type="u"/>
+    </signal>
+    <signal name="ActionInvoked">
+      <arg name="id" type="u"/>
+      <arg name="actionKey" type="s"/>
+    </signal>
+  </interface>
+</node>
