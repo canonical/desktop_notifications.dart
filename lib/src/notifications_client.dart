@@ -35,6 +35,41 @@ enum NotificationClosedReason { expired, dismissed, closed, unknown }
 typedef NotificationClosedFunction = void Function(
     NotificationClosedReason reason);
 
+/// Categories of notifications.
+class NotificationCategory {
+  /// Name of this category.
+  final String name;
+
+  NotificationCategory(this.name);
+
+  factory NotificationCategory.device() => NotificationCategory('device');
+  factory NotificationCategory.deviceAdded() =>
+      NotificationCategory('device.added');
+  factory NotificationCategory.deviceError() =>
+      NotificationCategory('device.error');
+  factory NotificationCategory.deviceRemoved() =>
+      NotificationCategory('device.removed');
+  factory NotificationCategory.email() => NotificationCategory('email');
+  factory NotificationCategory.emailArrived() =>
+      NotificationCategory('email.arrived');
+  factory NotificationCategory.emailBounced() =>
+      NotificationCategory('email.bounced');
+  factory NotificationCategory.im() => NotificationCategory('im');
+  factory NotificationCategory.imError() => NotificationCategory('imError');
+  factory NotificationCategory.imReceived() =>
+      NotificationCategory('imReceived');
+  factory NotificationCategory.network() => NotificationCategory('network');
+  factory NotificationCategory.networkConnected() =>
+      NotificationCategory('network.connected');
+  factory NotificationCategory.networkDisconnected() =>
+      NotificationCategory('network.disconnected');
+  factory NotificationCategory.networkError() =>
+      NotificationCategory('network.error');
+}
+
+/// Urgency of a notification
+enum NotificationUrgency { low, normal, critical }
+
 /// A hint about how to display this notification.
 class NotificationHint {
   /// Unique key for this hint.
@@ -51,9 +86,9 @@ class NotificationHint {
     return NotificationHint('action-icons', DBusBoolean(true));
   }
 
-  /// This notification is of type [category]. FIXME standard types.
-  factory NotificationHint.category(String category) {
-    return NotificationHint('category', DBusString(category));
+  /// This notification is of type [category].
+  factory NotificationHint.category(NotificationCategory category) {
+    return NotificationHint('category', DBusString(category.name));
   }
 
   /// This notification is from the application with the desktop file [name].desktop.
@@ -125,9 +160,17 @@ class NotificationHint {
         '*location', DBusStruct([DBusByte(x), DBusByte(y)]));
   }
 
-  /// This notification should have the given [urgency] level. FIXME enum
-  factory NotificationHint.urgency(int urgency) {
-    return NotificationHint('urgency', DBusByte(urgency));
+  /// This notification should have the given [urgency] level.
+  factory NotificationHint.urgency(NotificationUrgency urgency) {
+    var urgencyValue = -1;
+    if (urgency == NotificationUrgency.low) {
+      urgencyValue = 0;
+    } else if (urgency == NotificationUrgency.normal) {
+      urgencyValue = 1;
+    } else if (urgency == NotificationUrgency.critical) {
+      urgencyValue = 2;
+    }
+    return NotificationHint('urgency', DBusByte(urgencyValue));
   }
 }
 
@@ -195,12 +238,11 @@ class NotificationsClient extends DBusRemoteObject {
     var hintsValues = <DBusValue, DBusValue>{};
     for (var hint in hints) {
       if (hint.key == '*location') {
-        hintsValues[DBusString('x')] =
-            (hint.value as DBusStruct).children.elementAt(0);
-        hintsValues[DBusString('y')] =
-            (hint.value as DBusStruct).children.elementAt(1);
+        var locationValues = (hint.value as DBusStruct).children;
+        hintsValues[DBusString('x')] = DBusVariant(locationValues.elementAt(0));
+        hintsValues[DBusString('y')] = DBusVariant(locationValues.elementAt(1));
       } else {
-        hintsValues[DBusString(hint.key)] = hint.value;
+        hintsValues[DBusString(hint.key)] = DBusVariant(hint.value);
       }
     }
     var result = await callMethod('org.freedesktop.Notifications', 'Notify', [
