@@ -187,7 +187,7 @@ class NotificationAction {
 }
 
 /// A client that connects to the notifications server.
-class NotificationsClient extends DBusRemoteObject {
+class NotificationClient extends DBusRemoteObject {
   Completer _actionInvokedCompleter;
   DBusSignalSubscription _actionInvokedSubscription;
   final _actionCallbacks = <int, NotificationActionFunction>{};
@@ -197,7 +197,7 @@ class NotificationsClient extends DBusRemoteObject {
   final _closedCallbacks = <int, NotificationClosedFunction>{};
 
   /// Creates a new notification client connected to the session D-Bus.
-  NotificationsClient(DBusClient sessionBus)
+  NotificationClient(DBusClient sessionBus)
       : super(sessionBus, 'org.freedesktop.Notifications',
             DBusObjectPath('/org/freedesktop/Notifications'));
 
