@@ -7,6 +7,6 @@ void main() async {
   await client.notify('Close Me!', expireTimeoutMs: 5000,
       closedCallback: (reason) async {
     print('Notification closed due to reason ${reason}');
-    await sessionBus.disconnect();
+    await sessionBus.close();
   });
 }

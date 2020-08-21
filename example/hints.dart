@@ -22,5 +22,5 @@ void main() async {
     NotificationHint.imageData(255, 255, Uint8List.fromList(pixels))
   ]);
 
-  await sessionBus.disconnect();
+  await sessionBus.close();
 }
