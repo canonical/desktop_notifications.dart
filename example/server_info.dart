@@ -8,5 +8,5 @@ void main() async {
   var capabilities = await client.getCapabilities();
   print(
       'Notifications server ${serverInfo.name} implements desktop notifications specification version ${serverInfo.specVersion} and has capabilities ${capabilities}.');
-  await sessionBus.disconnect();
+  await sessionBus.close();
 }

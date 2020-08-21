@@ -5,5 +5,5 @@ void main() async {
   var sessionBus = DBusClient.session();
   var client = NotificationClient(sessionBus);
   await client.notify('Hello World!');
-  await sessionBus.disconnect();
+  await sessionBus.close();
 }

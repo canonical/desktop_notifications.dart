@@ -306,8 +306,8 @@ class NotificationClient extends DBusRemoteObject {
         (values[3] as DBusString).value);
   }
 
-  /// Disconnect from the bus
-  void disconnect() async {
+  /// Terminates all active connections. If a client remains unclosed, the Dart process may not terminate.
+  void close() async {
     if (_actionInvokedSubscription != null) {
       await client.unsubscribeSignals(_actionInvokedSubscription);
     }

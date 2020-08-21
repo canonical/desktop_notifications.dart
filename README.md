@@ -9,5 +9,5 @@ import 'package:desktop_notifications/desktop_notifications.dart';
 var sessionBus = DBusClient.session();
 var client = NotificationClient(sessionBus);
 await client.notify('Hello World!');
-await sessionBus.disconnect();
+await sessionBus.close();
 ```
