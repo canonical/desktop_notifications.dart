@@ -188,12 +188,10 @@ class NotificationAction {
 
 /// A client that connects to the notifications server.
 class NotificationClient extends DBusRemoteObject {
-  Completer _actionInvokedCompleter;
-  DBusSignalSubscription _actionInvokedSubscription;
+  StreamSubscription _actionInvokedSubscription;
   final _actionCallbacks = <int, NotificationActionFunction>{};
 
-  Completer _notificationClosedCompleter;
-  DBusSignalSubscription _notificationClosedSubscription;
+  StreamSubscription _notificationClosedSubscription;
   final _closedCallbacks = <int, NotificationClosedFunction>{};
 
   /// Creates a new notification client connected to the session D-Bus.
@@ -307,59 +305,60 @@ class NotificationClient extends DBusRemoteObject {
   }
 
   /// Terminates all active connections. If a client remains unclosed, the Dart process may not terminate.
-  void close() async {
+  void close() {
     if (_actionInvokedSubscription != null) {
-      await client.unsubscribeSignals(_actionInvokedSubscription);
+      _actionInvokedSubscription.cancel();
+      _actionInvokedSubscription = null;
     }
     if (_notificationClosedSubscription != null) {
-      await client.unsubscribeSignals(_notificationClosedSubscription);
+      _notificationClosedSubscription.cancel();
+      _notificationClosedSubscription = null;
     }
   }
 
   /// Listen for the signal when an action is invoked.
-  void _subscribeActionInvoked() async {
+  void _subscribeActionInvoked() {
     // Ensure the signal is only subscribed once.
-    if (_actionInvokedCompleter != null) {
-      return _actionInvokedCompleter.future;
+    if (_actionInvokedSubscription != null) {
+      return;
     }
-    _actionInvokedCompleter = Completer();
 
-    _actionInvokedSubscription = await subscribeSignal(
-        'org.freedesktop.Notifications', 'ActionInvoked', (values) {
-      if (values.length != 2 ||
-          values[0].signature != DBusSignature('u') ||
-          values[1].signature != DBusSignature('s')) {
+    var signals =
+        subscribeSignal('org.freedesktop.Notifications', 'ActionInvoked');
+    _actionInvokedSubscription = signals.listen((signal) {
+      if (signal.values.length != 2 ||
+          signal.values[0].signature != DBusSignature('u') ||
+          signal.values[1].signature != DBusSignature('s')) {
         return;
       }
 
-      var id = (values[0] as DBusUint32).value;
-      var actionKey = (values[1] as DBusString).value;
+      var id = (signal.values[0] as DBusUint32).value;
+      var actionKey = (signal.values[1] as DBusString).value;
       var callback = _actionCallbacks[id];
       if (callback != null) {
         callback(actionKey);
       }
     });
-    _actionInvokedCompleter.complete();
   }
 
   /// Listen for the signal when a notification is closed.
   void _subscribeNotificationClosed() async {
     // Ensure the signal is only subscribed once.
-    if (_notificationClosedCompleter != null) {
-      return _notificationClosedCompleter.future;
+    if (_notificationClosedSubscription != null) {
+      return;
     }
-    _notificationClosedCompleter = Completer();
 
-    _notificationClosedSubscription = await subscribeSignal(
-        'org.freedesktop.Notifications', 'NotificationClosed', (values) {
-      if (values.length != 2 ||
-          values[0].signature != DBusSignature('u') ||
-          values[1].signature != DBusSignature('u')) {
+    var signals =
+        subscribeSignal('org.freedesktop.Notifications', 'NotificationClosed');
+    _notificationClosedSubscription = signals.listen((signal) {
+      if (signal.values.length != 2 ||
+          signal.values[0].signature != DBusSignature('u') ||
+          signal.values[1].signature != DBusSignature('u')) {
         return;
       }
 
-      var id = (values[0] as DBusUint32).value;
-      var reasonId = (values[1] as DBusUint32).value;
+      var id = (signal.values[0] as DBusUint32).value;
+      var reasonId = (signal.values[1] as DBusUint32).value;
       var reason = NotificationClosedReason.unknown;
       if (reasonId == 1) {
         reason = NotificationClosedReason.expired;
@@ -373,7 +372,5 @@ class NotificationClient extends DBusRemoteObject {
         callback(reason);
       }
     });
-    _notificationClosedCompleter.complete();
-    ;
   }
 }
