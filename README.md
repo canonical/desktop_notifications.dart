@@ -11,3 +11,7 @@ var client = NotificationClient(sessionBus);
 await client.notify('Hello World!');
 await sessionBus.close();
 ```
+
+## Contributing to desktop_notifications.dart
+
+We welcome contributions! See the [contribution guide](CONTRIBUTING.md) for more details.
