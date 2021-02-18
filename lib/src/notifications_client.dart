@@ -188,10 +188,10 @@ class NotificationAction {
 
 /// A client that connects to the notifications server.
 class NotificationClient extends DBusRemoteObject {
-  StreamSubscription _actionInvokedSubscription;
+  StreamSubscription? _actionInvokedSubscription;
   final _actionCallbacks = <int, NotificationActionFunction>{};
 
-  StreamSubscription _notificationClosedSubscription;
+  StreamSubscription? _notificationClosedSubscription;
   final _closedCallbacks = <int, NotificationClosedFunction>{};
 
   /// Creates a new notification client connected to the session D-Bus.
@@ -219,13 +219,13 @@ class NotificationClient extends DBusRemoteObject {
       int replacesID = -1,
       List<NotificationHint> hints = const [],
       List<NotificationAction> actions = const [],
-      NotificationActionFunction actionCallback,
-      NotificationClosedFunction closedCallback}) async {
+      NotificationActionFunction? actionCallback,
+      NotificationClosedFunction? closedCallback}) async {
     if (actionCallback != null) {
-      await _subscribeActionInvoked();
+      _subscribeActionInvoked();
     }
     if (closedCallback != null) {
-      await _subscribeNotificationClosed();
+      _subscribeNotificationClosed();
     }
 
     var actionsValues = <DBusValue>[];
@@ -307,11 +307,11 @@ class NotificationClient extends DBusRemoteObject {
   /// Terminates all active connections. If a client remains unclosed, the Dart process may not terminate.
   void close() {
     if (_actionInvokedSubscription != null) {
-      _actionInvokedSubscription.cancel();
+      _actionInvokedSubscription?.cancel();
       _actionInvokedSubscription = null;
     }
     if (_notificationClosedSubscription != null) {
-      _notificationClosedSubscription.cancel();
+      _notificationClosedSubscription?.cancel();
       _notificationClosedSubscription = null;
     }
   }
@@ -342,7 +342,7 @@ class NotificationClient extends DBusRemoteObject {
   }
 
   /// Listen for the signal when a notification is closed.
-  void _subscribeNotificationClosed() async {
+  void _subscribeNotificationClosed() {
     // Ensure the signal is only subscribed once.
     if (_notificationClosedSubscription != null) {
       return;
