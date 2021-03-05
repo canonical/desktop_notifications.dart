@@ -187,17 +187,26 @@ class NotificationAction {
 }
 
 /// A client that connects to the notifications server.
-class NotificationClient extends DBusRemoteObject {
+class NotificationClient {
+  /// The bus this client is connected to.
+  final DBusClient _bus;
+  final bool _closeBus;
+
+  late final DBusRemoteObject _object;
+
   StreamSubscription? _actionInvokedSubscription;
   final _actionCallbacks = <int, NotificationActionFunction>{};
 
   StreamSubscription? _notificationClosedSubscription;
   final _closedCallbacks = <int, NotificationClosedFunction>{};
 
-  /// Creates a new notification client connected to the session D-Bus.
-  NotificationClient(DBusClient sessionBus)
-      : super(sessionBus, 'org.freedesktop.Notifications',
-            DBusObjectPath('/org/freedesktop/Notifications'));
+  /// Creates a new notification client. If [bus] is provided connect to the given D-Bus server.
+  NotificationClient({DBusClient? bus})
+      : _bus = bus ?? DBusClient.session(),
+        _closeBus = bus == null {
+    _object = DBusRemoteObject(_bus, 'org.freedesktop.Notifications',
+        DBusObjectPath('/org/freedesktop/Notifications'));
+  }
 
   /// Sends a notification with a [summary] and optional [body].
   ///
@@ -243,7 +252,8 @@ class NotificationClient extends DBusRemoteObject {
         hintsValues[DBusString(hint.key)] = DBusVariant(hint.value);
       }
     }
-    var result = await callMethod('org.freedesktop.Notifications', 'Notify', [
+    var result =
+        await _object.callMethod('org.freedesktop.Notifications', 'Notify', [
       DBusString(appName),
       DBusUint32(replacesID),
       DBusString(appIcon),
@@ -267,14 +277,14 @@ class NotificationClient extends DBusRemoteObject {
 
   /// Closes an existing notification with the given [id].
   Future closeNotification(int id) async {
-    await callMethod(
+    await _object.callMethod(
         'org.freedesktop.Notifications', 'CloseNotification', [DBusUint32(id)]);
   }
 
   /// Gets the capabilities of the notifications server.
   Future<List<String>> getCapabilities() async {
-    var result = await callMethod(
-        'org.freedesktop.Notifications', 'GetCapabilities', []);
+    var result = await _object
+        .callMethod('org.freedesktop.Notifications', 'GetCapabilities', []);
     var values = result.returnValues;
     if (values.length != 1 || values[0].signature != DBusSignature('as')) {
       throw 'GetCapabilities returned invalid result: $values';
@@ -287,7 +297,7 @@ class NotificationClient extends DBusRemoteObject {
 
   /// Gets information about the notifications server.
   Future<NotificationServerInformation> getServerInformation() async {
-    var result = await callMethod(
+    var result = await _object.callMethod(
         'org.freedesktop.Notifications', 'GetServerInformation', []);
     var values = result.returnValues;
     if (values.length != 4 ||
@@ -305,14 +315,17 @@ class NotificationClient extends DBusRemoteObject {
   }
 
   /// Terminates all active connections. If a client remains unclosed, the Dart process may not terminate.
-  void close() {
+  Future<void> close() async {
     if (_actionInvokedSubscription != null) {
-      _actionInvokedSubscription?.cancel();
+      await _actionInvokedSubscription?.cancel();
       _actionInvokedSubscription = null;
     }
     if (_notificationClosedSubscription != null) {
-      _notificationClosedSubscription?.cancel();
+      await _notificationClosedSubscription?.cancel();
       _notificationClosedSubscription = null;
+    }
+    if (_closeBus) {
+      await _bus.close();
     }
   }
 
@@ -323,8 +336,8 @@ class NotificationClient extends DBusRemoteObject {
       return;
     }
 
-    var signals =
-        subscribeSignal('org.freedesktop.Notifications', 'ActionInvoked');
+    var signals = _object.subscribeSignal(
+        'org.freedesktop.Notifications', 'ActionInvoked');
     _actionInvokedSubscription = signals.listen((signal) {
       if (signal.values.length != 2 ||
           signal.values[0].signature != DBusSignature('u') ||
@@ -348,8 +361,8 @@ class NotificationClient extends DBusRemoteObject {
       return;
     }
 
-    var signals =
-        subscribeSignal('org.freedesktop.Notifications', 'NotificationClosed');
+    var signals = _object.subscribeSignal(
+        'org.freedesktop.Notifications', 'NotificationClosed');
     _notificationClosedSubscription = signals.listen((signal) {
       if (signal.values.length != 2 ||
           signal.values[0].signature != DBusSignature('u') ||
