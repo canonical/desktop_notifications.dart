@@ -7,6 +7,6 @@ void main() async {
   var serverInfo = await client.getServerInformation();
   var capabilities = await client.getCapabilities();
   print(
-      'Notifications server ${serverInfo.name} implements desktop notifications specification version ${serverInfo.specVersion} and has capabilities ${capabilities}.');
+      'Notifications server ${serverInfo.name} implements desktop notifications specification version ${serverInfo.specVersion} and has capabilities $capabilities.');
   await sessionBus.close();
 }

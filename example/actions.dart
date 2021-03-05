@@ -11,7 +11,7 @@ void main() async {
         NotificationAction('red-pill', 'Red Pill'),
         NotificationAction('blue-pill', 'Blue Pill')
       ], actionCallback: (action) async {
-    print('You chose ${action}');
+    print('You chose $action');
     await sessionBus.close();
   });
 }
