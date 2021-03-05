@@ -21,7 +21,7 @@ class NotificationServerInformation {
 
   @override
   String toString() {
-    return "NotificationServerInformation(name: '${name}', vendor: '${vendor}', version: '${version}', specVersion: '${specVersion}')";
+    return "NotificationServerInformation(name: '$name', vendor: '$vendor', version: '$version', specVersion: '$specVersion')";
   }
 }
 
@@ -277,7 +277,7 @@ class NotificationClient extends DBusRemoteObject {
         'org.freedesktop.Notifications', 'GetCapabilities', []);
     var values = result.returnValues;
     if (values.length != 1 || values[0].signature != DBusSignature('as')) {
-      throw 'GetCapabilities returned invalid result: ${values}';
+      throw 'GetCapabilities returned invalid result: $values';
     }
     return (values[0] as DBusArray)
         .children
@@ -295,7 +295,7 @@ class NotificationClient extends DBusRemoteObject {
         values[1].signature != DBusSignature('s') ||
         values[2].signature != DBusSignature('s') ||
         values[3].signature != DBusSignature('s')) {
-      throw 'GetServerInformation returned invalid result: ${values}';
+      throw 'GetServerInformation returned invalid result: $values';
     }
     return NotificationServerInformation(
         (values[0] as DBusString).value,
