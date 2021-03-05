@@ -1,10 +1,8 @@
 import 'dart:typed_data';
-import 'package:dbus/dbus.dart';
 import 'package:desktop_notifications/desktop_notifications.dart';
 
 void main() async {
-  var sessionBus = DBusClient.session();
-  var client = NotificationClient(sessionBus);
+  var client = NotificationClient();
 
   /// Make a simple color gradient icon.
   var pixels = <int>[];
@@ -22,5 +20,5 @@ void main() async {
     NotificationHint.imageData(255, 255, Uint8List.fromList(pixels))
   ]);
 
-  await sessionBus.close();
+  await client.close();
 }
