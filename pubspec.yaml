@@ -1,5 +1,5 @@
 name: desktop_notifications
-version: 0.2.1
+version: 0.2.2
 
 description:
   Allows notifications to be sent on Linux desktops using the desktop notifications specification.

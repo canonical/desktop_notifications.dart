@@ -2,6 +2,10 @@
 
 ## 0.2.1
 
+* Bump dbus dependency to avoid a signal subscription bug.
+
+## 0.2.1
+
 * Make the DBusClient parameter optional.
 * Code tidy ups to pass dart analyze in 1.12 final release.
 
