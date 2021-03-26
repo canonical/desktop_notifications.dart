@@ -3,7 +3,7 @@ import 'dart:typed_data';
 import 'package:dbus/dbus.dart';
 
 /// Contains information reported by the notifications server.
-class NotificationServerInformation {
+class NotificationsServerInformation {
   /// Name of the server.
   final String name;
 
@@ -16,12 +16,12 @@ class NotificationServerInformation {
   /// The notifications specification version this server implements.
   final String specVersion;
 
-  const NotificationServerInformation(
+  const NotificationsServerInformation(
       this.name, this.vendor, this.version, this.specVersion);
 
   @override
   String toString() {
-    return "NotificationServerInformation(name: '$name', vendor: '$vendor', version: '$version', specVersion: '$specVersion')";
+    return "NotificationsServerInformation(name: '$name', vendor: '$vendor', version: '$version', specVersion: '$specVersion')";
   }
 }
 
@@ -187,7 +187,7 @@ class NotificationAction {
 }
 
 /// A client that connects to the notifications server.
-class NotificationClient {
+class NotificationsClient {
   /// The bus this client is connected to.
   final DBusClient _bus;
   final bool _closeBus;
@@ -201,7 +201,7 @@ class NotificationClient {
   final _closedCallbacks = <int, NotificationClosedFunction>{};
 
   /// Creates a new notification client. If [bus] is provided connect to the given D-Bus server.
-  NotificationClient({DBusClient? bus})
+  NotificationsClient({DBusClient? bus})
       : _bus = bus ?? DBusClient.session(),
         _closeBus = bus == null {
     _object = DBusRemoteObject(_bus, 'org.freedesktop.Notifications',
@@ -296,7 +296,7 @@ class NotificationClient {
   }
 
   /// Gets information about the notifications server.
-  Future<NotificationServerInformation> getServerInformation() async {
+  Future<NotificationsServerInformation> getServerInformation() async {
     var result = await _object.callMethod(
         'org.freedesktop.Notifications', 'GetServerInformation', []);
     var values = result.returnValues;
@@ -307,7 +307,7 @@ class NotificationClient {
         values[3].signature != DBusSignature('s')) {
       throw 'GetServerInformation returned invalid result: $values';
     }
-    return NotificationServerInformation(
+    return NotificationsServerInformation(
         (values[0] as DBusString).value,
         (values[1] as DBusString).value,
         (values[2] as DBusString).value,

@@ -2,7 +2,7 @@ import 'dart:typed_data';
 import 'package:desktop_notifications/desktop_notifications.dart';
 
 void main() async {
-  var client = NotificationClient();
+  var client = NotificationsClient();
 
   /// Make a simple color gradient icon.
   var pixels = <int>[];

@@ -5,7 +5,7 @@ Allows notifications to be sent on Linux desktops using the [desktop notificatio
 ```dart
 import 'package:desktop_notifications/desktop_notifications.dart';
 
-var client = NotificationClient();
+var client = NotificationsClient();
 await client.notify('Hello World!');
 await client.close();
 ```

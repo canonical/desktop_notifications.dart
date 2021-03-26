@@ -1,7 +1,7 @@
 import 'package:desktop_notifications/desktop_notifications.dart';
 
 void main() async {
-  var client = NotificationClient();
+  var client = NotificationsClient();
   var serverInfo = await client.getServerInformation();
   var capabilities = await client.getCapabilities();
   print(
