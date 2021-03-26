@@ -213,7 +213,7 @@ class NotificationsClient {
   /// [appName] is a human readable name for the application that generated the notification, e.g. 'Firefox Browser'.
   /// [appIcon] is either a URI (e.g. 'file:///usr/share/icons/firefox.png') or an icon theme name (e.g. 'web-browser').
   /// [expireTimeoutMs] specified the expiration timeout in milliseconds with -1 used for the system default and 0 for no expiration.
-  /// [replacesID] is the ID of an existing notification this notification replaces.
+  /// [replacesId] is the ID of an existing notification this notification replaces.
   /// [actions] is a list of actions the user can perform on this notification.
   /// [hints] is a list of hints about how the notification should be shown.
   /// [actionCallback] is a function to call when the action on this notification is invoked.
@@ -225,7 +225,7 @@ class NotificationsClient {
       String appName = '',
       String appIcon = '',
       int expireTimeoutMs = -1,
-      int replacesID = -1,
+      int replacesId = 0,
       List<NotificationHint> hints = const [],
       List<NotificationAction> actions = const [],
       NotificationActionFunction? actionCallback,
@@ -255,7 +255,7 @@ class NotificationsClient {
     var result =
         await _object.callMethod('org.freedesktop.Notifications', 'Notify', [
       DBusString(appName),
-      DBusUint32(replacesID),
+      DBusUint32(replacesId),
       DBusString(appIcon),
       DBusString(summary),
       DBusString(body),
