@@ -220,7 +220,7 @@ class NotificationsClient {
 
   late final DBusRemoteObject _object;
 
-// Signal subscriptions.
+  // Signal subscriptions.
   StreamSubscription? _actionInvokedSubscription;
   StreamSubscription? _notificationClosedSubscription;
 
