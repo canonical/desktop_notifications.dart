@@ -25,16 +25,6 @@ class NotificationsServerInformation {
   }
 }
 
-/// Function called when a notification action is invoked.
-typedef NotificationActionFunction = void Function(String key);
-
-/// The reason a notification was closed
-enum NotificationClosedReason { expired, dismissed, closed, unknown }
-
-/// Function called when a notification is closed.
-typedef NotificationClosedFunction = void Function(
-    NotificationClosedReason reason);
-
 /// Categories of notifications.
 class NotificationCategory {
   /// Name of this category.
@@ -186,6 +176,42 @@ class NotificationAction {
   const NotificationAction(this.key, this.label);
 }
 
+/// The reason a notification was closed.
+enum NotificationClosedReason { expired, dismissed, closed, unknown }
+
+/// A notification that was created by this client.
+class Notification {
+  /// The client this notification is part of.
+  final NotificationsClient client;
+
+  /// Id number assigned to this notification.
+  final int id;
+
+  /// The action that was chosen by the user.
+  Future<String> get action => _actionCompleter.future;
+
+  /// The reason the notification was closed.
+  Future<NotificationClosedReason> get closeReason => _closeCompleter.future;
+
+  final _actionCompleter = Completer<String>();
+  final _closeCompleter = Completer<NotificationClosedReason>();
+
+  /// Creates a new notification object.
+  /// You should not need to use this constructor directly and instead use a value returned from [NotificationsClient.notify].
+  /// Creating a notification from an ID may be required if you had no manage a notification created by other code.
+  Notification(this.client, this.id) {
+    // Subscribe signals here in case this wasn't created by our client.
+    client._subscribeSignals();
+    client._notifications[id] = this;
+  }
+
+  /// Closes this notification.
+  Future<void> close() async {
+    await client._object.callMethod(
+        'org.freedesktop.Notifications', 'CloseNotification', [DBusUint32(id)]);
+  }
+}
+
 /// A client that connects to the notifications server.
 class NotificationsClient {
   /// The bus this client is connected to.
@@ -194,11 +220,12 @@ class NotificationsClient {
 
   late final DBusRemoteObject _object;
 
+// Signal subscriptions.
   StreamSubscription? _actionInvokedSubscription;
-  final _actionCallbacks = <int, NotificationActionFunction>{};
-
   StreamSubscription? _notificationClosedSubscription;
-  final _closedCallbacks = <int, NotificationClosedFunction>{};
+
+  // Notifications in progress.
+  final _notifications = <int, Notification>{};
 
   /// Creates a new notification client. If [bus] is provided connect to the given D-Bus server.
   NotificationsClient({DBusClient? bus})
@@ -216,26 +243,17 @@ class NotificationsClient {
   /// [replacesId] is the ID of an existing notification this notification replaces.
   /// [actions] is a list of actions the user can perform on this notification.
   /// [hints] is a list of hints about how the notification should be shown.
-  /// [actionCallback] is a function to call when the action on this notification is invoked.
-  /// [closedCallback] is a function to call when the action is closed.
   ///
-  /// Returns the id of the notification, which can be used in [CloseNotification].
-  Future<int> notify(String summary,
+  /// Returns an object representing the notification.
+  Future<Notification> notify(String summary,
       {String body = '',
       String appName = '',
       String appIcon = '',
       int expireTimeoutMs = -1,
       int replacesId = 0,
       List<NotificationHint> hints = const [],
-      List<NotificationAction> actions = const [],
-      NotificationActionFunction? actionCallback,
-      NotificationClosedFunction? closedCallback}) async {
-    if (actionCallback != null) {
-      _subscribeActionInvoked();
-    }
-    if (closedCallback != null) {
-      _subscribeNotificationClosed();
-    }
+      List<NotificationAction> actions = const []}) async {
+    _subscribeSignals();
 
     var actionsValues = <DBusValue>[];
     for (var action in actions) {
@@ -265,20 +283,7 @@ class NotificationsClient {
     ]);
     var id = (result.returnValues[0] as DBusUint32).value;
 
-    if (actionCallback != null) {
-      _actionCallbacks[id] = actionCallback;
-    }
-    if (closedCallback != null) {
-      _closedCallbacks[id] = closedCallback;
-    }
-
-    return id;
-  }
-
-  /// Closes an existing notification with the given [id].
-  Future closeNotification(int id) async {
-    await _object.callMethod(
-        'org.freedesktop.Notifications', 'CloseNotification', [DBusUint32(id)]);
+    return Notification(this, id);
   }
 
   /// Gets the capabilities of the notifications server.
@@ -329,16 +334,16 @@ class NotificationsClient {
     }
   }
 
-  /// Listen for the signal when an action is invoked.
-  void _subscribeActionInvoked() {
-    // Ensure the signal is only subscribed once.
+  /// Subscribe to the signals for actions and notifications being closed.
+  void _subscribeSignals() {
+    // Ensure the signals are only subscribed once.
     if (_actionInvokedSubscription != null) {
       return;
     }
 
-    var signals = _object.subscribeSignal(
+    var actionsInvokedSignals = _object.subscribeSignal(
         'org.freedesktop.Notifications', 'ActionInvoked');
-    _actionInvokedSubscription = signals.listen((signal) {
+    _actionInvokedSubscription = actionsInvokedSignals.listen((signal) {
       if (signal.values.length != 2 ||
           signal.values[0].signature != DBusSignature('u') ||
           signal.values[1].signature != DBusSignature('s')) {
@@ -347,23 +352,15 @@ class NotificationsClient {
 
       var id = (signal.values[0] as DBusUint32).value;
       var actionKey = (signal.values[1] as DBusString).value;
-      var callback = _actionCallbacks[id];
-      if (callback != null) {
-        callback(actionKey);
+      var notification = _notifications[id];
+      if (notification != null) {
+        notification._actionCompleter.complete(actionKey);
       }
     });
-  }
 
-  /// Listen for the signal when a notification is closed.
-  void _subscribeNotificationClosed() {
-    // Ensure the signal is only subscribed once.
-    if (_notificationClosedSubscription != null) {
-      return;
-    }
-
-    var signals = _object.subscribeSignal(
+    var closedSignals = _object.subscribeSignal(
         'org.freedesktop.Notifications', 'NotificationClosed');
-    _notificationClosedSubscription = signals.listen((signal) {
+    _notificationClosedSubscription = closedSignals.listen((signal) {
       if (signal.values.length != 2 ||
           signal.values[0].signature != DBusSignature('u') ||
           signal.values[1].signature != DBusSignature('u')) {
@@ -380,9 +377,9 @@ class NotificationsClient {
       } else if (reasonId == 3) {
         reason = NotificationClosedReason.closed;
       }
-      var callback = _closedCallbacks[id];
-      if (callback != null) {
-        callback(reason);
+      var notification = _notifications[id];
+      if (notification != null) {
+        notification._closeCompleter.complete(reason);
       }
     });
   }
