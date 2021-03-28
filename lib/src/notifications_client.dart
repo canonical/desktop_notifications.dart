@@ -377,7 +377,7 @@ class NotificationsClient {
       } else if (reasonId == 3) {
         reason = NotificationClosedReason.closed;
       }
-      var notification = _notifications[id];
+      var notification = _notifications.remove(id);
       if (notification != null) {
         notification._closeCompleter.complete(reason);
       }
