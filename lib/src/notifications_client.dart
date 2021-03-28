@@ -40,7 +40,7 @@ class NotificationCategory {
   /// Name of this category.
   final String name;
 
-  NotificationCategory(this.name);
+  const NotificationCategory(this.name);
 
   factory NotificationCategory.device() => NotificationCategory('device');
   factory NotificationCategory.deviceAdded() =>
@@ -79,7 +79,7 @@ class NotificationHint {
   final DBusValue value;
 
   /// Creates a custom notification hint.
-  NotificationHint(this.key, this.value);
+  const NotificationHint(this.key, this.value);
 
   /// This notification should have its action IDs intepreted as icon names.
   factory NotificationHint.actionIcons() {
