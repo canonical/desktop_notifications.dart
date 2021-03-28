@@ -290,11 +290,10 @@ class NotificationsClient {
   Future<List<String>> getCapabilities() async {
     var result = await _object
         .callMethod('org.freedesktop.Notifications', 'GetCapabilities', []);
-    var values = result.returnValues;
-    if (values.length != 1 || values[0].signature != DBusSignature('as')) {
-      throw 'GetCapabilities returned invalid result: $values';
+    if (result.signature != DBusSignature('as')) {
+      throw 'GetCapabilities returned invalid result: ${result.returnValues}';
     }
-    return (values[0] as DBusArray)
+    return (result.returnValues[0] as DBusArray)
         .children
         .map((child) => (child as DBusString).value)
         .toList();
@@ -304,14 +303,10 @@ class NotificationsClient {
   Future<NotificationsServerInformation> getServerInformation() async {
     var result = await _object.callMethod(
         'org.freedesktop.Notifications', 'GetServerInformation', []);
-    var values = result.returnValues;
-    if (values.length != 4 ||
-        values[0].signature != DBusSignature('s') ||
-        values[1].signature != DBusSignature('s') ||
-        values[2].signature != DBusSignature('s') ||
-        values[3].signature != DBusSignature('s')) {
-      throw 'GetServerInformation returned invalid result: $values';
+    if (result.signature != DBusSignature('ssss')) {
+      throw 'GetServerInformation returned invalid result: ${result.returnValues}';
     }
+    var values = result.returnValues;
     return NotificationsServerInformation(
         (values[0] as DBusString).value,
         (values[1] as DBusString).value,
@@ -344,9 +339,7 @@ class NotificationsClient {
     var actionsInvokedSignals = _object.subscribeSignal(
         'org.freedesktop.Notifications', 'ActionInvoked');
     _actionInvokedSubscription = actionsInvokedSignals.listen((signal) {
-      if (signal.values.length != 2 ||
-          signal.values[0].signature != DBusSignature('u') ||
-          signal.values[1].signature != DBusSignature('s')) {
+      if (signal.signature != DBusSignature('us')) {
         return;
       }
 
@@ -361,9 +354,7 @@ class NotificationsClient {
     var closedSignals = _object.subscribeSignal(
         'org.freedesktop.Notifications', 'NotificationClosed');
     _notificationClosedSubscription = closedSignals.listen((signal) {
-      if (signal.values.length != 2 ||
-          signal.values[0].signature != DBusSignature('u') ||
-          signal.values[1].signature != DBusSignature('u')) {
+      if (signal.signature != DBusSignature('uu')) {
         return;
       }
 
