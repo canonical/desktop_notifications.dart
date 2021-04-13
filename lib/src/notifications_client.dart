@@ -336,8 +336,8 @@ class NotificationsClient {
       return;
     }
 
-    var actionsInvokedSignals = _object.subscribeSignal(
-        'org.freedesktop.Notifications', 'ActionInvoked');
+    var actionsInvokedSignals = DBusRemoteObjectSignalStream(
+        _object, 'org.freedesktop.Notifications', 'ActionInvoked');
     _actionInvokedSubscription = actionsInvokedSignals.listen((signal) {
       if (signal.signature != DBusSignature('us')) {
         return;
@@ -351,8 +351,8 @@ class NotificationsClient {
       }
     });
 
-    var closedSignals = _object.subscribeSignal(
-        'org.freedesktop.Notifications', 'NotificationClosed');
+    var closedSignals = DBusRemoteObjectSignalStream(
+        _object, 'org.freedesktop.Notifications', 'NotificationClosed');
     _notificationClosedSubscription = closedSignals.listen((signal) {
       if (signal.signature != DBusSignature('uu')) {
         return;
