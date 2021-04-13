@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.0
+
+* Update to dbus 0.4
+
 ## 0.3.0
 
 * Rename NotificationClient to NotificationsClient (was a typo).
