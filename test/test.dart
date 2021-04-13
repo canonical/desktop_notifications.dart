@@ -25,10 +25,8 @@ class MockNotificationsObject extends DBusObject {
   // Next ID to assign to the next notification.
   var _nextId = 1;
 
-  MockNotificationsObject();
-
-  @override
-  DBusObjectPath get path => DBusObjectPath('/org/freedesktop/Notifications');
+  MockNotificationsObject()
+      : super(DBusObjectPath('/org/freedesktop/Notifications'));
 
   @override
   Future<DBusMethodResponse> handleMethodCall(DBusMethodCall methodCall) async {
