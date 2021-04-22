@@ -45,8 +45,7 @@ class MockNotificationsObject extends DBusObject {
 
       case 'GetCapabilities':
         return DBusMethodSuccessResponse([
-          DBusArray(DBusSignature('s'),
-              [DBusString('actions'), DBusString('body'), DBusString('sound')])
+          DBusArray.string(['actions', 'body', 'sound'])
         ]);
 
       case 'Notify':

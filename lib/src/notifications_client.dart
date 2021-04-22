@@ -110,7 +110,7 @@ class NotificationHint {
           DBusBoolean(hasAlpha),
           DBusInt32(bitsPerSample),
           DBusInt32(channels),
-          DBusArray(DBusSignature('y'), data.map((d) => DBusByte(d)))
+          DBusArray.byte(data)
         ]));
   }
 
@@ -255,19 +255,19 @@ class NotificationsClient {
       List<NotificationAction> actions = const []}) async {
     _subscribeSignals();
 
-    var actionsValues = <DBusValue>[];
+    var actionsValues = <String>[];
     for (var action in actions) {
-      actionsValues.add(DBusString(action.key));
-      actionsValues.add(DBusString(action.label));
+      actionsValues.add(action.key);
+      actionsValues.add(action.label);
     }
-    var hintsValues = <DBusValue, DBusValue>{};
+    var hintsValues = <String, DBusValue>{};
     for (var hint in hints) {
       if (hint.key == '*location') {
         var locationValues = (hint.value as DBusStruct).children;
-        hintsValues[DBusString('x')] = DBusVariant(locationValues.elementAt(0));
-        hintsValues[DBusString('y')] = DBusVariant(locationValues.elementAt(1));
+        hintsValues['x'] = locationValues.elementAt(0);
+        hintsValues['y'] = locationValues.elementAt(1);
       } else {
-        hintsValues[DBusString(hint.key)] = DBusVariant(hint.value);
+        hintsValues[hint.key] = hint.value;
       }
     }
     var result =
@@ -277,8 +277,8 @@ class NotificationsClient {
       DBusString(appIcon),
       DBusString(summary),
       DBusString(body),
-      DBusArray(DBusSignature('s'), actionsValues),
-      DBusDict(DBusSignature('s'), DBusSignature('v'), hintsValues),
+      DBusArray.string(actionsValues),
+      DBusDict.stringVariant(hintsValues),
       DBusInt32(expireTimeoutMs)
     ]);
     var id = (result.returnValues[0] as DBusUint32).value;
