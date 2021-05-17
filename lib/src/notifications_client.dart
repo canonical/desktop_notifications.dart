@@ -208,7 +208,8 @@ class Notification {
   /// Closes this notification.
   Future<void> close() async {
     await client._object.callMethod(
-        'org.freedesktop.Notifications', 'CloseNotification', [DBusUint32(id)]);
+        'org.freedesktop.Notifications', 'CloseNotification', [DBusUint32(id)],
+        replySignature: DBusSignature(''));
   }
 }
 
@@ -270,17 +271,20 @@ class NotificationsClient {
         hintsValues[hint.key] = hint.value;
       }
     }
-    var result =
-        await _object.callMethod('org.freedesktop.Notifications', 'Notify', [
-      DBusString(appName),
-      DBusUint32(replacesId),
-      DBusString(appIcon),
-      DBusString(summary),
-      DBusString(body),
-      DBusArray.string(actionsValues),
-      DBusDict.stringVariant(hintsValues),
-      DBusInt32(expireTimeoutMs)
-    ]);
+    var result = await _object.callMethod(
+        'org.freedesktop.Notifications',
+        'Notify',
+        [
+          DBusString(appName),
+          DBusUint32(replacesId),
+          DBusString(appIcon),
+          DBusString(summary),
+          DBusString(body),
+          DBusArray.string(actionsValues),
+          DBusDict.stringVariant(hintsValues),
+          DBusInt32(expireTimeoutMs)
+        ],
+        replySignature: DBusSignature('u'));
     var id = (result.returnValues[0] as DBusUint32).value;
 
     return Notification(this, id);
@@ -288,11 +292,9 @@ class NotificationsClient {
 
   /// Gets the capabilities of the notifications server.
   Future<List<String>> getCapabilities() async {
-    var result = await _object
-        .callMethod('org.freedesktop.Notifications', 'GetCapabilities', []);
-    if (result.signature != DBusSignature('as')) {
-      throw 'GetCapabilities returned invalid result: ${result.returnValues}';
-    }
+    var result = await _object.callMethod(
+        'org.freedesktop.Notifications', 'GetCapabilities', [],
+        replySignature: DBusSignature('as'));
     return (result.returnValues[0] as DBusArray)
         .children
         .map((child) => (child as DBusString).value)
@@ -302,10 +304,8 @@ class NotificationsClient {
   /// Gets information about the notifications server.
   Future<NotificationsServerInformation> getServerInformation() async {
     var result = await _object.callMethod(
-        'org.freedesktop.Notifications', 'GetServerInformation', []);
-    if (result.signature != DBusSignature('ssss')) {
-      throw 'GetServerInformation returned invalid result: ${result.returnValues}';
-    }
+        'org.freedesktop.Notifications', 'GetServerInformation', [],
+        replySignature: DBusSignature('ssss'));
     var values = result.returnValues;
     return NotificationsServerInformation(
         (values[0] as DBusString).value,
