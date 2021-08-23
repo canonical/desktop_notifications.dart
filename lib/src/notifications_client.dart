@@ -232,8 +232,9 @@ class NotificationsClient {
   NotificationsClient({DBusClient? bus})
       : _bus = bus ?? DBusClient.session(),
         _closeBus = bus == null {
-    _object = DBusRemoteObject(_bus, 'org.freedesktop.Notifications',
-        DBusObjectPath('/org/freedesktop/Notifications'));
+    _object = DBusRemoteObject(_bus,
+        name: 'org.freedesktop.Notifications',
+        path: DBusObjectPath('/org/freedesktop/Notifications'));
   }
 
   /// Sends a notification with a [summary] and optional [body].
@@ -337,7 +338,9 @@ class NotificationsClient {
     }
 
     var actionsInvokedSignals = DBusRemoteObjectSignalStream(
-        _object, 'org.freedesktop.Notifications', 'ActionInvoked');
+        object: _object,
+        interface: 'org.freedesktop.Notifications',
+        name: 'ActionInvoked');
     _actionInvokedSubscription = actionsInvokedSignals.listen((signal) {
       if (signal.signature != DBusSignature('us')) {
         return;
@@ -352,7 +355,9 @@ class NotificationsClient {
     });
 
     var closedSignals = DBusRemoteObjectSignalStream(
-        _object, 'org.freedesktop.Notifications', 'NotificationClosed');
+        object: _object,
+        interface: 'org.freedesktop.Notifications',
+        name: 'NotificationClosed');
     _notificationClosedSubscription = closedSignals.listen((signal) {
       if (signal.signature != DBusSignature('uu')) {
         return;
