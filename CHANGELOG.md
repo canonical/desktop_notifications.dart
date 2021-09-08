@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.1
+
+* Fix incorrect data type used in NotificationHint.location().
+* Replace Uint8List in NotificationHint.imageData() with Iterable<int>.
+* Fix specification link in README.
+
 ## 0.6.0
 
 * Update to dbus 0.6.
