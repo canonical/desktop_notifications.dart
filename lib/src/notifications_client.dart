@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:typed_data';
 import 'package:dbus/dbus.dart';
 
 /// Contains information reported by the notifications server.
@@ -93,7 +92,7 @@ class NotificationHint {
   /// [hasAlpha] is true if the image has an alpha channel.
   /// [bitsPerSample] is the number of bits in each color sample.
   /// [channels] is the number of channels in the image (e.g. 3 for RGB, 4 for RGBA).
-  factory NotificationHint.imageData(int width, int height, Uint8List data,
+  factory NotificationHint.imageData(int width, int height, Iterable<int> data,
       {int rowStride = -1,
       bool hasAlpha = false,
       int bitsPerSample = 8,
