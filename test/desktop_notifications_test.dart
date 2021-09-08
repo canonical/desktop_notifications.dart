@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:dbus/dbus.dart';
 import 'package:desktop_notifications/desktop_notifications.dart';
@@ -320,8 +319,7 @@ void main() {
     expect(n.hints, equals({'desktop-entry': DBusString('test.desktop')}));
 
     notification = await client.notify('Test', hints: [
-      NotificationHint.imageData(
-          12, 34, Uint8List.fromList([0x12, 0x34, 0x56, 0x78]),
+      NotificationHint.imageData(12, 34, [0x12, 0x34, 0x56, 0x78],
           rowStride: 66, hasAlpha: true, bitsPerSample: 12, channels: 4)
     ]);
     n = notifications.notifications[notification.id]!;
