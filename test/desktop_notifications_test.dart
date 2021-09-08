@@ -19,13 +19,9 @@ class MockNotification {
 }
 
 class MockNotificationsObject extends DBusObject {
-  // Active notifications.
-  final notifications = <int, MockNotification>{};
+  final MockNotificationsServer server;
 
-  // Next ID to assign to the next notification.
-  var _nextId = 1;
-
-  MockNotificationsObject()
+  MockNotificationsObject(this.server)
       : super(DBusObjectPath('/org/freedesktop/Notifications'));
 
   @override
@@ -37,16 +33,15 @@ class MockNotificationsObject extends DBusObject {
     switch (methodCall.name) {
       case 'GetServerInformation':
         return DBusMethodSuccessResponse([
-          DBusString('name'),
-          DBusString('vendor'),
-          DBusString('0.1'), // Version.
-          DBusString('1.2') // Spec version.
+          DBusString(server.name),
+          DBusString(server.vendor),
+          DBusString(server.version),
+          DBusString(server.specVersion)
         ]);
 
       case 'GetCapabilities':
-        return DBusMethodSuccessResponse([
-          DBusArray.string(['actions', 'body', 'sound'])
-        ]);
+        return DBusMethodSuccessResponse(
+            [DBusArray.string(server.capabilities)]);
 
       case 'Notify':
         var appName = (methodCall.values[0] as DBusString).value;
@@ -62,15 +57,15 @@ class MockNotificationsObject extends DBusObject {
                 value) =>
             MapEntry((key as DBusString).value, (value as DBusVariant).value));
         var expireTimeoutMs = (methodCall.values[7] as DBusInt32).value;
-        var id = _nextId;
-        _nextId++;
-        notifications[id] = MockNotification(appName, replacesId, appIcon,
-            summary, body, actions, hints, expireTimeoutMs);
+        var id = server._nextId;
+        server._nextId++;
+        server.notifications[id] = MockNotification(appName, replacesId,
+            appIcon, summary, body, actions, hints, expireTimeoutMs);
         return DBusMethodSuccessResponse([DBusUint32(id)]);
 
       case 'CloseNotification':
         var id = (methodCall.values[0] as DBusUint32).value;
-        notifications.remove(id);
+        server.notifications.remove(id);
         return DBusMethodSuccessResponse([]);
 
       default:
@@ -79,68 +74,124 @@ class MockNotificationsObject extends DBusObject {
   }
 }
 
-class MockNotificationsServer extends DBusServer {
-  late DBusAddress clientAddress;
-  late MockNotificationsObject _object;
-  Map<int, MockNotification> get notifications => _object.notifications;
+class MockNotificationsServer extends DBusClient {
+  late final MockNotificationsObject _root;
+
+  final List<String> capabilities;
+  final String name;
+  final String specVersion;
+  final String vendor;
+  final String version;
+
+  // Active notifications.
+  final notifications = <int, MockNotification>{};
+
+  // Next ID to assign to the next notification.
+  var _nextId = 1;
+
+  MockNotificationsServer(DBusAddress clientAddress,
+      {this.capabilities = const [],
+      this.name = '',
+      this.specVersion = '',
+      this.vendor = '',
+      this.version = ''})
+      : super(clientAddress) {
+    _root = MockNotificationsObject(this);
+  }
 
   Future<void> start() async {
-    clientAddress =
-        await listenAddress(DBusAddress.unix(dir: Directory.systemTemp));
-
-    var c = DBusClient(clientAddress);
-    await c.requestName('org.freedesktop.Notifications');
-    _object = MockNotificationsObject();
-    await c.registerObject(_object);
+    await requestName('org.freedesktop.Notifications');
+    await registerObject(_root);
   }
 
   void emitActionInvoked(int id, String actionKey) {
-    _object.emitSignal('org.freedesktop.Notifications', 'ActionInvoked',
+    _root.emitSignal('org.freedesktop.Notifications', 'ActionInvoked',
         [DBusUint32(id), DBusString(actionKey)]);
   }
 
   void emitNotificationClosed(int id, int reason) {
-    _object.emitSignal('org.freedesktop.Notifications', 'NotificationClosed',
+    _root.emitSignal('org.freedesktop.Notifications', 'NotificationClosed',
         [DBusUint32(id), DBusUint32(reason)]);
   }
 }
 
 void main() {
   test('get server information', () async {
-    var server = MockNotificationsServer();
-    await server.start();
+    var server = DBusServer();
+    var clientAddress =
+        await server.listenAddress(DBusAddress.unix(dir: Directory.systemTemp));
+    addTearDown(() async {
+      await server.close();
+    });
+
+    var notifications = MockNotificationsServer(clientAddress,
+        name: 'name', vendor: 'vendor', version: '0.1', specVersion: '1.2');
+    await notifications.start();
+    addTearDown(() async {
+      await notifications.close();
+    });
 
     // Get server information.
-    var client = NotificationsClient(bus: DBusClient(server.clientAddress));
-    var info = await client.getServerInformation();
-    expect(info.name, equals('name'));
-    expect(info.vendor, equals('vendor'));
-    expect(info.version, equals('0.1'));
-    expect(info.specVersion, equals('1.2'));
-    await client.close();
+    if (true) {
+      var client = NotificationsClient(bus: DBusClient(clientAddress));
+      addTearDown(() async {
+        await client.close();
+      });
+      var info = await client.getServerInformation();
+      expect(info.name, equals('name'));
+      expect(info.vendor, equals('vendor'));
+      expect(info.version, equals('0.1'));
+      expect(info.specVersion, equals('1.2'));
+    }
   });
 
   test('get capabilities', () async {
-    var server = MockNotificationsServer();
-    await server.start();
+    var server = DBusServer();
+    var clientAddress =
+        await server.listenAddress(DBusAddress.unix(dir: Directory.systemTemp));
+    addTearDown(() async {
+      await server.close();
+    });
+
+    var notifications = MockNotificationsServer(clientAddress,
+        capabilities: ['actions', 'body', 'sound']);
+    await notifications.start();
+    addTearDown(() async {
+      await notifications.close();
+    });
 
     // Get server capabilities.
-    var client = NotificationsClient(bus: DBusClient(server.clientAddress));
+    var client = NotificationsClient(bus: DBusClient(clientAddress));
+    addTearDown(() async {
+      await client.close();
+    });
     var capabilities = await client.getCapabilities();
     expect(capabilities, equals(['actions', 'body', 'sound']));
-    await client.close();
   });
 
   test('notify - simple', () async {
-    var server = MockNotificationsServer();
-    await server.start();
+    var server = DBusServer();
+    var clientAddress =
+        await server.listenAddress(DBusAddress.unix(dir: Directory.systemTemp));
+    addTearDown(() async {
+      await server.close();
+    });
+
+    var notifications = MockNotificationsServer(clientAddress);
+    await notifications.start();
+    addTearDown(() async {
+      await notifications.close();
+    });
 
     // Send a simple notification.
-    var client = NotificationsClient(bus: DBusClient(server.clientAddress));
+    var client = NotificationsClient(bus: DBusClient(clientAddress));
+    addTearDown(() async {
+      await client.close();
+    });
     var notification = await client.notify('Hello World!');
 
-    expect(server.notifications, contains(notification.id));
-    var n = server.notifications[notification.id]!;
+    expect(notifications.notifications, contains(notification.id));
+    var n = notifications.notifications[notification.id]!;
     expect(n.appName, equals(''));
     expect(n.replacesId, equals(0));
     expect(n.appIcon, equals(''));
@@ -149,16 +200,27 @@ void main() {
     expect(n.actions, isEmpty);
     expect(n.hints, isEmpty);
     expect(n.expireTimeoutMs, equals(-1));
-
-    await client.close();
   });
 
   test('notify - complex', () async {
-    var server = MockNotificationsServer();
-    await server.start();
+    var server = DBusServer();
+    var clientAddress =
+        await server.listenAddress(DBusAddress.unix(dir: Directory.systemTemp));
+    addTearDown(() async {
+      await server.close();
+    });
+
+    var notifications = MockNotificationsServer(clientAddress);
+    await notifications.start();
+    addTearDown(() async {
+      await notifications.close();
+    });
 
     // Send a complex notification.
-    var client = NotificationsClient(bus: DBusClient(server.clientAddress));
+    var client = NotificationsClient(bus: DBusClient(clientAddress));
+    addTearDown(() async {
+      await client.close();
+    });
     var notification = await client.notify('Hello World!',
         body: 'BODY',
         appName: 'APP_NAME',
@@ -174,8 +236,8 @@ void main() {
           NotificationAction('KEY2', 'LABEL2')
         ]);
 
-    expect(server.notifications, contains(notification.id));
-    var n = server.notifications[notification.id]!;
+    expect(notifications.notifications, contains(notification.id));
+    var n = notifications.notifications[notification.id]!;
     expect(n.appName, equals('APP_NAME'));
     expect(n.replacesId, equals(999));
     expect(n.appIcon, equals('APP_ICON'));
@@ -185,77 +247,138 @@ void main() {
     expect(
         n.hints, equals({'KEY1': DBusString('VALUE1'), 'KEY2': DBusUint32(2)}));
     expect(n.expireTimeoutMs, equals(42));
-
-    await client.close();
   });
 
   test('notification expired', () async {
-    var server = MockNotificationsServer();
-    await server.start();
+    var server = DBusServer();
+    var clientAddress =
+        await server.listenAddress(DBusAddress.unix(dir: Directory.systemTemp));
+    addTearDown(() async {
+      await server.close();
+    });
+
+    var notifications = MockNotificationsServer(clientAddress);
+    await notifications.start();
+    addTearDown(() async {
+      await notifications.close();
+    });
 
     // Send a simple notification and wait for it to be closed.
-    var client = NotificationsClient(bus: DBusClient(server.clientAddress));
+    var client = NotificationsClient(bus: DBusClient(clientAddress));
+    addTearDown(() async {
+      await client.close();
+    });
     var notification = await client.notify('Hello World!');
     expect(notification.closeReason,
         completion(equals(NotificationClosedReason.expired)));
 
     // Close the notification.
-    server.emitNotificationClosed(notification.id, 1);
+    notifications.emitNotificationClosed(notification.id, 1);
   });
 
   test('notification dismissed', () async {
-    var server = MockNotificationsServer();
-    await server.start();
+    var server = DBusServer();
+    var clientAddress =
+        await server.listenAddress(DBusAddress.unix(dir: Directory.systemTemp));
+    addTearDown(() async {
+      await server.close();
+    });
+
+    var notifications = MockNotificationsServer(clientAddress);
+    await notifications.start();
+    addTearDown(() async {
+      await notifications.close();
+    });
 
     // Send a simple notification and wait for it to be closed.
-    var client = NotificationsClient(bus: DBusClient(server.clientAddress));
+    var client = NotificationsClient(bus: DBusClient(clientAddress));
+    addTearDown(() async {
+      await client.close();
+    });
     var notification = await client.notify('Hello World!');
     expect(notification.closeReason,
         completion(equals(NotificationClosedReason.dismissed)));
 
     // Close the notification.
-    server.emitNotificationClosed(notification.id, 2);
+    notifications.emitNotificationClosed(notification.id, 2);
   });
 
   test('notification closed', () async {
-    var server = MockNotificationsServer();
-    await server.start();
+    var server = DBusServer();
+    var clientAddress =
+        await server.listenAddress(DBusAddress.unix(dir: Directory.systemTemp));
+    addTearDown(() async {
+      await server.close();
+    });
+
+    var notifications = MockNotificationsServer(clientAddress);
+    await notifications.start();
+    addTearDown(() async {
+      await notifications.close();
+    });
 
     // Send a simple notification and wait for it to be closed.
-    var client = NotificationsClient(bus: DBusClient(server.clientAddress));
+    var client = NotificationsClient(bus: DBusClient(clientAddress));
+    addTearDown(() async {
+      await client.close();
+    });
     var notification = await client.notify('Hello World!');
     expect(notification.closeReason,
         completion(equals(NotificationClosedReason.closed)));
 
     // Close the notification.
-    server.emitNotificationClosed(notification.id, 3);
+    notifications.emitNotificationClosed(notification.id, 3);
   });
 
   test('notification action', () async {
-    var server = MockNotificationsServer();
-    await server.start();
+    var server = DBusServer();
+    var clientAddress =
+        await server.listenAddress(DBusAddress.unix(dir: Directory.systemTemp));
+    addTearDown(() async {
+      await server.close();
+    });
+
+    var notifications = MockNotificationsServer(clientAddress);
+    await notifications.start();
+    addTearDown(() async {
+      await notifications.close();
+    });
 
     // Send a simple notification and wait for it to be closed.
-    var client = NotificationsClient(bus: DBusClient(server.clientAddress));
+    var client = NotificationsClient(bus: DBusClient(clientAddress));
+    addTearDown(() async {
+      await client.close();
+    });
     var notification = await client
         .notify('Hello World!', actions: [NotificationAction('KEY', 'LABEL')]);
     expect(notification.action, completion(equals('KEY')));
 
     // Close the notification.
-    server.emitActionInvoked(notification.id, 'KEY');
+    notifications.emitActionInvoked(notification.id, 'KEY');
   });
 
   test('close notification', () async {
-    var server = MockNotificationsServer();
-    await server.start();
+    var server = DBusServer();
+    var clientAddress =
+        await server.listenAddress(DBusAddress.unix(dir: Directory.systemTemp));
+    addTearDown(() async {
+      await server.close();
+    });
+
+    var notifications = MockNotificationsServer(clientAddress);
+    await notifications.start();
+    addTearDown(() async {
+      await notifications.close();
+    });
 
     // Send, then close a simple notification.
-    var client = NotificationsClient(bus: DBusClient(server.clientAddress));
+    var client = NotificationsClient(bus: DBusClient(clientAddress));
+    addTearDown(() async {
+      await client.close();
+    });
     var notification = await client.notify('Hello World!');
     await notification.close();
 
-    expect(server.notifications, isEmpty);
-
-    await client.close();
+    expect(notifications.notifications, isEmpty);
   });
 }
