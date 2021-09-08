@@ -202,6 +202,108 @@ void main() {
     expect(n.expireTimeoutMs, equals(-1));
   });
 
+  test('notify - categories', () async {
+    var server = DBusServer();
+    var clientAddress =
+        await server.listenAddress(DBusAddress.unix(dir: Directory.systemTemp));
+    addTearDown(() async {
+      await server.close();
+    });
+
+    var notifications = MockNotificationsServer(clientAddress);
+    await notifications.start();
+    addTearDown(() async {
+      await notifications.close();
+    });
+
+    var client = NotificationsClient(bus: DBusClient(clientAddress));
+    addTearDown(() async {
+      await client.close();
+    });
+
+    var notification = await client.notify('Test', hints: [
+      NotificationHint.category(NotificationCategory('custom-category'))
+    ]);
+    var n = notifications.notifications[notification.id]!;
+    expect(n.hints['category'], equals(DBusString('custom-category')));
+
+    notification = await client.notify('Test',
+        hints: [NotificationHint.category(NotificationCategory.device())]);
+    n = notifications.notifications[notification.id]!;
+    expect(n.hints['category'], equals(DBusString('device')));
+
+    notification = await client.notify('Test',
+        hints: [NotificationHint.category(NotificationCategory.deviceAdded())]);
+    n = notifications.notifications[notification.id]!;
+    expect(n.hints['category'], equals(DBusString('device.added')));
+
+    notification = await client.notify('Test',
+        hints: [NotificationHint.category(NotificationCategory.deviceError())]);
+    n = notifications.notifications[notification.id]!;
+    expect(n.hints['category'], equals(DBusString('device.error')));
+
+    notification = await client.notify('Test', hints: [
+      NotificationHint.category(NotificationCategory.deviceRemoved())
+    ]);
+    n = notifications.notifications[notification.id]!;
+    expect(n.hints['category'], equals(DBusString('device.removed')));
+
+    notification = await client.notify('Test',
+        hints: [NotificationHint.category(NotificationCategory.email())]);
+    n = notifications.notifications[notification.id]!;
+    expect(n.hints['category'], equals(DBusString('email')));
+
+    notification = await client.notify('Test', hints: [
+      NotificationHint.category(NotificationCategory.emailArrived())
+    ]);
+    n = notifications.notifications[notification.id]!;
+    expect(n.hints['category'], equals(DBusString('email.arrived')));
+
+    notification = await client.notify('Test', hints: [
+      NotificationHint.category(NotificationCategory.emailBounced())
+    ]);
+    n = notifications.notifications[notification.id]!;
+    expect(n.hints['category'], equals(DBusString('email.bounced')));
+
+    notification = await client.notify('Test',
+        hints: [NotificationHint.category(NotificationCategory.im())]);
+    n = notifications.notifications[notification.id]!;
+    expect(n.hints['category'], equals(DBusString('im')));
+
+    notification = await client.notify('Test',
+        hints: [NotificationHint.category(NotificationCategory.imError())]);
+    n = notifications.notifications[notification.id]!;
+    expect(n.hints['category'], equals(DBusString('imError')));
+
+    notification = await client.notify('Test',
+        hints: [NotificationHint.category(NotificationCategory.imReceived())]);
+    n = notifications.notifications[notification.id]!;
+    expect(n.hints['category'], equals(DBusString('imReceived')));
+
+    notification = await client.notify('Test',
+        hints: [NotificationHint.category(NotificationCategory.network())]);
+    n = notifications.notifications[notification.id]!;
+    expect(n.hints['category'], equals(DBusString('network')));
+
+    notification = await client.notify('Test', hints: [
+      NotificationHint.category(NotificationCategory.networkConnected())
+    ]);
+    n = notifications.notifications[notification.id]!;
+    expect(n.hints['category'], equals(DBusString('network.connected')));
+
+    notification = await client.notify('Test', hints: [
+      NotificationHint.category(NotificationCategory.networkDisconnected())
+    ]);
+    n = notifications.notifications[notification.id]!;
+    expect(n.hints['category'], equals(DBusString('network.disconnected')));
+
+    notification = await client.notify('Test', hints: [
+      NotificationHint.category(NotificationCategory.networkError())
+    ]);
+    n = notifications.notifications[notification.id]!;
+    expect(n.hints['category'], equals(DBusString('network.error')));
+  });
+
   test('notify - complex', () async {
     var server = DBusServer();
     var clientAddress =
