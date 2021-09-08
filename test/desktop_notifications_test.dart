@@ -370,7 +370,7 @@ void main() {
     notification =
         await client.notify('Test', hints: [NotificationHint.location(12, 34)]);
     n = notifications.notifications[notification.id]!;
-    expect(n.hints, equals({'x': DBusByte(12), 'y': DBusByte(34)}));
+    expect(n.hints, equals({'x': DBusInt32(12), 'y': DBusInt32(34)}));
 
     notification = await client.notify('Test',
         hints: [NotificationHint.urgency(NotificationUrgency.low)]);

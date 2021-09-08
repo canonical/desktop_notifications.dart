@@ -146,7 +146,7 @@ class NotificationHint {
   /// This notification should be placed at the given [x] and [y] co-ordinates.
   factory NotificationHint.location(int x, int y) {
     return NotificationHint(
-        '*location', DBusStruct([DBusByte(x), DBusByte(y)]));
+        '*location', DBusStruct([DBusInt32(x), DBusInt32(y)]));
   }
 
   /// This notification should have the given [urgency] level.
