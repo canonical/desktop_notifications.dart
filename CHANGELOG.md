@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.2
+
+* List Linux as the only supported platform.
+* Switch from pedantic to lints for source checking.
+
 ## 0.6.1
 
 * Fix incorrect data type used in NotificationHint.location().
