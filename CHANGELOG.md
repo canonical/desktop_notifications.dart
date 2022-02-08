@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.6.3
+
+* Update to dbus 0.7
+
 ## 0.6.2
 
 * List Linux as the only supported platform.
