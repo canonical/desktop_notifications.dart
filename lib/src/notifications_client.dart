@@ -20,7 +20,7 @@ class NotificationsServerInformation {
 
   @override
   String toString() {
-    return "NotificationsServerInformation(name: '$name', vendor: '$vendor', version: '$version', specVersion: '$specVersion')";
+    return "$runtimeType(name: '$name', vendor: '$vendor', version: '$version', specVersion: '$specVersion')";
   }
 }
 
