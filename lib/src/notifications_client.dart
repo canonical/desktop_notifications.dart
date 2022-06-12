@@ -19,9 +19,8 @@ class NotificationsServerInformation {
       this.name, this.vendor, this.version, this.specVersion);
 
   @override
-  String toString() {
-    return "$runtimeType(name: '$name', vendor: '$vendor', version: '$version', specVersion: '$specVersion')";
-  }
+  String toString() =>
+      "$runtimeType(name: '$name', vendor: '$vendor', version: '$version', specVersion: '$specVersion')";
 }
 
 /// Categories of notifications.
