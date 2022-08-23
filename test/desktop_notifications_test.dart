@@ -44,19 +44,14 @@ class MockNotificationsObject extends DBusObject {
             [DBusArray.string(server.capabilities)]);
 
       case 'Notify':
-        var appName = (methodCall.values[0] as DBusString).value;
-        var replacesId = (methodCall.values[1] as DBusUint32).value;
-        var appIcon = (methodCall.values[2] as DBusString).value;
-        var summary = (methodCall.values[3] as DBusString).value;
-        var body = (methodCall.values[4] as DBusString).value;
-        var actions = (methodCall.values[5] as DBusArray)
-            .children
-            .map((value) => (value as DBusString).value)
-            .toList();
-        var hints = (methodCall.values[6] as DBusDict).children.map((key,
-                value) =>
-            MapEntry((key as DBusString).value, (value as DBusVariant).value));
-        var expireTimeoutMs = (methodCall.values[7] as DBusInt32).value;
+        var appName = methodCall.values[0].asString();
+        var replacesId = methodCall.values[1].asUint32();
+        var appIcon = methodCall.values[2].asString();
+        var summary = methodCall.values[3].asString();
+        var body = methodCall.values[4].asString();
+        var actions = methodCall.values[5].asStringArray().toList();
+        var hints = methodCall.values[6].asStringVariantDict();
+        var expireTimeoutMs = methodCall.values[7].asInt32();
         var id = server._nextId;
         server._nextId++;
         server.notifications[id] = MockNotification(appName, replacesId,
@@ -64,7 +59,7 @@ class MockNotificationsObject extends DBusObject {
         return DBusMethodSuccessResponse([DBusUint32(id)]);
 
       case 'CloseNotification':
-        var id = (methodCall.values[0] as DBusUint32).value;
+        var id = methodCall.values[0].asUint32();
         server.notifications.remove(id);
         return DBusMethodSuccessResponse([]);
 
