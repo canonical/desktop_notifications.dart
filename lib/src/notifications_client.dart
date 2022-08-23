@@ -338,12 +338,9 @@ class NotificationsClient {
     var actionsInvokedSignals = DBusRemoteObjectSignalStream(
         object: _object,
         interface: 'org.freedesktop.Notifications',
-        name: 'ActionInvoked');
+        name: 'ActionInvoked',
+        signature: DBusSignature('us'));
     _actionInvokedSubscription = actionsInvokedSignals.listen((signal) {
-      if (signal.signature != DBusSignature('us')) {
-        return;
-      }
-
       var id = (signal.values[0] as DBusUint32).value;
       var actionKey = (signal.values[1] as DBusString).value;
       var notification = _notifications[id];
@@ -355,12 +352,9 @@ class NotificationsClient {
     var closedSignals = DBusRemoteObjectSignalStream(
         object: _object,
         interface: 'org.freedesktop.Notifications',
-        name: 'NotificationClosed');
+        name: 'NotificationClosed',
+        signature: DBusSignature('uu'));
     _notificationClosedSubscription = closedSignals.listen((signal) {
-      if (signal.signature != DBusSignature('uu')) {
-        return;
-      }
-
       var id = (signal.values[0] as DBusUint32).value;
       var reasonId = (signal.values[1] as DBusUint32).value;
       var reason = NotificationClosedReason.unknown;
