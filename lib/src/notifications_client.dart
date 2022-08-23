@@ -263,7 +263,7 @@ class NotificationsClient {
     var hintsValues = <String, DBusValue>{};
     for (var hint in hints) {
       if (hint.key == '*location') {
-        var locationValues = (hint.value as DBusStruct).children;
+        var locationValues = hint.value.asStruct();
         hintsValues['x'] = locationValues.elementAt(0);
         hintsValues['y'] = locationValues.elementAt(1);
       } else {
@@ -284,7 +284,7 @@ class NotificationsClient {
           DBusInt32(expireTimeoutMs)
         ],
         replySignature: DBusSignature('u'));
-    var id = (result.returnValues[0] as DBusUint32).value;
+    var id = result.returnValues[0].asUint32();
 
     return Notification(this, id);
   }
@@ -294,10 +294,7 @@ class NotificationsClient {
     var result = await _object.callMethod(
         'org.freedesktop.Notifications', 'GetCapabilities', [],
         replySignature: DBusSignature('as'));
-    return (result.returnValues[0] as DBusArray)
-        .children
-        .map((child) => (child as DBusString).value)
-        .toList();
+    return result.returnValues[0].asStringArray().toList();
   }
 
   /// Gets information about the notifications server.
@@ -306,11 +303,8 @@ class NotificationsClient {
         'org.freedesktop.Notifications', 'GetServerInformation', [],
         replySignature: DBusSignature('ssss'));
     var values = result.returnValues;
-    return NotificationsServerInformation(
-        (values[0] as DBusString).value,
-        (values[1] as DBusString).value,
-        (values[2] as DBusString).value,
-        (values[3] as DBusString).value);
+    return NotificationsServerInformation(values[0].asString(),
+        values[1].asString(), values[2].asString(), values[3].asString());
   }
 
   /// Terminates all active connections. If a client remains unclosed, the Dart process may not terminate.
@@ -341,8 +335,8 @@ class NotificationsClient {
         name: 'ActionInvoked',
         signature: DBusSignature('us'));
     _actionInvokedSubscription = actionsInvokedSignals.listen((signal) {
-      var id = (signal.values[0] as DBusUint32).value;
-      var actionKey = (signal.values[1] as DBusString).value;
+      var id = signal.values[0].asUint32();
+      var actionKey = signal.values[1].asString();
       var notification = _notifications[id];
       if (notification != null) {
         notification._actionCompleter.complete(actionKey);
@@ -355,8 +349,8 @@ class NotificationsClient {
         name: 'NotificationClosed',
         signature: DBusSignature('uu'));
     _notificationClosedSubscription = closedSignals.listen((signal) {
-      var id = (signal.values[0] as DBusUint32).value;
-      var reasonId = (signal.values[1] as DBusUint32).value;
+      var id = signal.values[0].asUint32();
+      var reasonId = signal.values[1].asUint32();
       var reason = NotificationClosedReason.unknown;
       if (reasonId == 1) {
         reason = NotificationClosedReason.expired;
