@@ -26,6 +26,10 @@
     <signal name="NotificationClosed">
       <arg name="id" type="u"/>
       <arg name="reason" type="u"/>
+      </signal>
+      <signal name="NotificationReplied">
+      <arg name="id" type="u"/>
+      <arg name="text" type="string"/>
     </signal>
     <signal name="ActionInvoked">
       <arg name="id" type="u"/>

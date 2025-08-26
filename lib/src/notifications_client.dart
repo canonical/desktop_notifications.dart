@@ -69,7 +69,7 @@ class NotificationHint {
   /// Creates a custom notification hint.
   const NotificationHint(this.key, this.value);
 
-  /// This notification should have its action IDs intepreted as icon names.
+  /// This notification should have its action IDs interpreted as icon names.
   factory NotificationHint.actionIcons() {
     return NotificationHint('action-icons', DBusBoolean(true));
   }
@@ -188,10 +188,14 @@ class Notification {
   /// The action that was chosen by the user.
   Future<String> get action => _actionCompleter.future;
 
+  // The reply by the user
+  Future<String> get reply => _replyCompleter.future;
+
   /// The reason the notification was closed.
   Future<NotificationClosedReason> get closeReason => _closeCompleter.future;
 
   final _actionCompleter = Completer<String>();
+  final _replyCompleter = Completer<String>();
   final _closeCompleter = Completer<NotificationClosedReason>();
 
   /// Creates a new notification object.
@@ -221,6 +225,7 @@ class NotificationsClient {
 
   // Signal subscriptions.
   StreamSubscription? _actionInvokedSubscription;
+  StreamSubscription? _replyInvokedSubscription;
   StreamSubscription? _notificationClosedSubscription;
 
   // Notifications in progress.
@@ -313,6 +318,10 @@ class NotificationsClient {
       await _actionInvokedSubscription?.cancel();
       _actionInvokedSubscription = null;
     }
+    if (_replyInvokedSubscription != null) {
+      await _replyInvokedSubscription?.cancel();
+      _replyInvokedSubscription = null;
+    }
     if (_notificationClosedSubscription != null) {
       await _notificationClosedSubscription?.cancel();
       _notificationClosedSubscription = null;
@@ -340,6 +349,20 @@ class NotificationsClient {
       var notification = _notifications[id];
       if (notification != null) {
         notification._actionCompleter.complete(actionKey);
+      }
+    });
+
+    var replyInvokedSignals = DBusRemoteObjectSignalStream(
+        object: _object,
+        interface: 'org.freedesktop.Notifications',
+        name: 'NotificationReplied',
+        signature: DBusSignature('us'));
+    _replyInvokedSubscription = replyInvokedSignals.listen((signal) {
+      var id = signal.values[0].asUint32();
+      var actionKey = signal.values[1].asString();
+      var notification = _notifications[id];
+      if (notification != null) {
+        notification._replyCompleter.complete(actionKey);
       }
     });
 
